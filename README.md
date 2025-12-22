@@ -1,111 +1,165 @@
-# 🚀 DevOps Take-Home Assignment (7-Day Challenge)
+# DevOps Assignment — Production-Grade Microservice Deployment on AWS
 
-Welcome to the 7-day DevOps assignment. Your mission is to design, build, and manage a production-grade microservice deployment using modern DevOps practices and tools.
+## Overview
+This project demonstrates how to design, deploy, and manage a **production-grade microservice-based application** on AWS using modern DevOps practices and tools.
 
----
+The focus of this assignment is on **infrastructure design, deployment automation, and operational readiness**, rather than application complexity or business features.
 
-## 🧩 1. Setup & Plan
+The system consists of **two independently deployable services**:
+- **Frontend Service** — a web application
+- **Backend Service** — a REST API
 
-### ✅ Deliverables
-- Project plan with architecture diagram and tech stack
-- GitHub repository with this `README.md`
-
-### 🛠️ Tasks
-- Deploy 2 services (1 backend, 1 frontend)
-- Define infrastructure (e.g., AWS, GCP, Azure)
-- Choose your toolchain (e.g., Terraform, Docker, Kubernetes, GitHub Actions, Prometheus, etc.)
-- Sketch out the architecture for:
-  - Application
-  - CI/CD pipeline
-  - Monitoring/Logging
+Both services are containerized and communicate over HTTP.
 
 ---
 
-## 🏗️ 2. Infrastructure as Code
+## Architecture Decision
 
-### ✅ Deliverables
-- Terraform or Pulumi code to provision:
-  - Kubernetes cluster or Docker Swarm
-  - VPC, subnet, Load Balancer, storage, etc.
+### High-Level Architecture
+Client  
+↓  
+Nginx (Reverse Proxy)  
+├─ Frontend Service (Container)  
+└─ Backend API Service (Container)
 
-### 🎁 Bonus
-- Use remote backend for state management
-- Structure IaC using modules
+### Why Frontend + Backend?
+- Demonstrates clear **service boundaries**
+- Each service can be **built, deployed, and updated independently**
+- Aligns with **microservice architecture principles**
+- Keeps the application simple while highlighting DevOps capabilities
 
----
-
-## 📦 3. Application Containerization
-
-### ✅ Deliverables
-- Dockerized microservice (Node.js, Python, or Go)
-- Image pushed to a container registry (Docker Hub, ECR, etc.)
-
-### ⚙️ Requirements
-- Use multi-stage Docker builds
-- Optimize image size
-- Define container health checks
+Although the backend is a single API service, the overall system qualifies as a **microservice-based architecture** because services are isolated, networked, and independently deployable.
 
 ---
 
-## 🔁 4. CI/CD Pipeline
+## Technology Stack & Rationale
 
-### ✅ Deliverables
-- Set up CI/CD using GitHub Actions, GitLab CI, or Jenkins
-- Pipeline should:
-  - Build, test, and push the image
-  - Deploy to a staging or production environment
-
-### 🎁 Bonus
-- Implement a deployment strategy (e.g., blue-green or canary)
+### Application Layer
+| Component | Technology | Rationale |
+|----------|------------|-----------|
+| Frontend | Static Web (HTML / JS or SPA) | Lightweight and fast to deploy |
+| Backend | REST API | Stateless and easy to containerize |
+| Communication | HTTP | Standard service-to-service communication |
 
 ---
 
-## ☸️ 5. Kubernetes Deployment
-
-### ✅ Deliverables
-- Kubernetes manifests or a Helm chart for:
-  - Deployment
-  - Service
-  - Ingress (with TLS if possible)
-
-### 🎁 Bonus
-- Use ConfigMaps and Secrets for configuration
+### Containerization
+| Tool | Rationale |
+|-----|-----------|
+| Docker | Industry-standard container platform |
+| Separate Dockerfiles | Enables independent service lifecycle |
 
 ---
 
-## 📈 6. Observability
+### Cloud Platform
+| Service | Rationale |
+|--------|-----------|
+| AWS EC2 | Simple, cost-efficient, Free Tier friendly |
+| Nginx | Reverse proxy instead of managed load balancer |
+| Amazon ECR (optional) | Container image registry |
 
-### ✅ Deliverables
-- Logging and monitoring setup:
-  - Prometheus + Grafana for metrics
-  - Fluent Bit or Loki for logs
-
-### 🎁 Bonus
-- Configure alerting (e.g., pod crashes, high CPU/memory)
-
----
-
-## 📝 7. Documentation & Demo
-
-### ✅ Deliverables
-- Final `README.md` with:
-  - How to deploy the project
-  - Architecture and CI/CD diagrams
-  - Monitoring and logging setup
+> Kubernetes (EKS) is intentionally not used to avoid unnecessary operational complexity for the scope of this assignment.  
+> In a larger-scale production environment, ECS or EKS would be considered.
 
 ---
 
-## 📊 Evaluation Criteria
+### Infrastructure as Code (IaC)
+| Tool | Rationale |
+|------|-----------|
+| Terraform | Declarative, repeatable, and widely adopted IaC tool |
 
-| Area             | Focus                                                                 |
-|------------------|-----------------------------------------------------------------------|
-| IaC              | Reusability, modular design, cloud-agnostic setup                    |
-| Dockerization    | Build efficiency, small image size, production readiness             |
-| CI/CD            | Reliability, rollback capability, environment separation             |
-| Kubernetes       | Best practices, scaling, configuration separation                    |
-| Monitoring       | Useful dashboards, alert coverage, performance visibility            |
-| Documentation    | Clarity, completeness, structure, and ease of understanding          |
+All infrastructure is provisioned using code to ensure consistency and reproducibility.
 
 ---
 
-Good luck, and have fun! 💪
+### CI/CD
+| Tool | Rationale |
+|------|-----------|
+| GitHub Actions | Native GitHub integration and simple automation |
+
+The CI/CD pipeline automates:
+1. Docker image builds
+2. Image publishing
+3. Deployment to AWS EC2
+
+---
+
+### Observability & Operations
+| Area | Approach |
+|------|----------|
+| Logging | Amazon CloudWatch Logs |
+| Metrics | Amazon CloudWatch Metrics |
+| Health Checks | `/health` endpoint on backend |
+| Resilience | Docker restart policies |
+
+These practices ensure the system is observable and manageable in a production-like environment.
+
+---
+
+## Microservice Definition
+This system follows microservice principles by ensuring:
+- Independent service deployment
+- Container isolation
+- Network-based communication
+- Stateless application design
+
+Future improvements may include decomposing the backend into multiple domain-based services (e.g., user-service, order-service).
+
+---
+
+## Local Development
+
+### Run Backend
+```bash
+docker build -t backend ./backend
+docker run -p 8080:8080 backend `
+
+###Run Frontend
+```bash
+docker build -t frontend ./frontend
+docker run -p 3000:80 frontend `
+
+---
+
+##Deployment Workflow (High-Level)
+
+Git Commit
+↓
+GitHub Actions (CI)
+↓
+Build Docker Images
+↓
+Push Images
+↓
+Deploy to AWS EC2
+↓
+Run Containers
+↓
+Nginx Routes Traffic
+
+---
+
+## Cost Consideration
+
+This project is designed to operate within AWS Free Tier constraints by:
+- Using a single EC2 instance
+- Avoiding managed load balancers
+- Not using Kubernetes control plane services
+
+This approach minimizes cost while still demonstrating production-grade DevOps practices.
+
+---
+
+## Future Improvements
+- Introduce ECS or EKS for container orchestration
+- Add auto-scaling and load balancing
+- Implement centralized monitoring dashboards
+- Add a staging environment
+
+---
+
+## Conclusion
+
+This project showcases how a production-grade microservice deployment can be achieved using simple, well-reasoned architectural decisions and modern DevOps practices on AWS.
+
+**Full Changelog**: https://github.com/MarkThana/devops-assignment-test/commits/readme-v1.0.0
