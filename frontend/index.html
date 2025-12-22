@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>DevOps Assignment Frontend</title>
+</head>
+<body>
+  <h1>Frontend Service</h1>
+  <button onclick="loadMessage()">Call Backend API</button>
+  <p id="result"></p>
+
+  <script>
+    async function loadMessage() {
+      try {
+        const response = await fetch("http://localhost:8080/api/message");
+        const data = await response.json();
+        document.getElementById("result").innerText = data.message;
+      } catch (error) {
+        document.getElementById("result").innerText = "Failed to call backend";
+      }
+    }
+  </script>
+</body>
+</html>
