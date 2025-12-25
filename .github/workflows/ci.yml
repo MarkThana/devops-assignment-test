@@ -77,27 +77,19 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v4
+      - name: Deploy via SSH to EC2
+        uses: appleboy/ssh-action@v1.0.0
         with:
-          version: v1.29.0
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd ~/devops-assignment-test
+            git pull origin main
 
-      - name: Configure kubeconfig
-        run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBECONFIG }}" > ~/.kube/config
-          chmod 600 ~/.kube/config
+            kubectl apply -f k8s/namespace.yaml
+            kubectl apply -f k8s/backend/
+            kubectl apply -f k8s/frontend/
 
-      - name: Verify cluster connection
-        run: kubectl get nodes
-
-      - name: Deploy manifests
-        run: |
-          kubectl apply -f k8s/namespace.yaml
-          kubectl apply -f k8s/backend/
-          kubectl apply -f k8s/frontend/
-
-      - name: Restart deployments (pull latest image)
-        run: |
-          kubectl -n $NAMESPACE rollout restart deployment/backend
-          kubectl -n $NAMESPACE rollout restart deployment/frontend
+            kubectl -n devops-assignment rollout restart deployment/backend
+            kubectl -n devops-assignment rollout restart deployment/frontend
