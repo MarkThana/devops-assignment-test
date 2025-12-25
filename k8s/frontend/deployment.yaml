@@ -15,6 +15,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: markthanapat/frontend:1.0.1
+          image: markthanapat/f1ab8bc1fbb102c648fb9b4385547573d3c70e11
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
