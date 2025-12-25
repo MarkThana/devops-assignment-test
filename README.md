@@ -15,6 +15,7 @@ The goal is to reflect real-world DevOps practices rather than a minimal demo.
 
 ## Architecture
 
+```
 Developer
 │
 ▼
@@ -37,6 +38,7 @@ Kubernetes Cluster
 ├─ Loki (Logs)
 ├─ Promtail (Log Collector – DaemonSet)
 └─ Grafana (Visualization)
+```
 
 Flow:
 
