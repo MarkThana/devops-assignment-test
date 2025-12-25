@@ -1,165 +1,232 @@
-# DevOps Assignment — Production-Grade Microservice Deployment on AWS
+# DevOps Assignment – CI/CD, Kubernetes & Observability
 
 ## Overview
-This project demonstrates how to design, deploy, and manage a **production-grade microservice-based application** on AWS using modern DevOps practices and tools.
 
-The focus of this assignment is on **infrastructure design, deployment automation, and operational readiness**, rather than application complexity or business features.
+This repository demonstrates a production-ready DevOps setup covering:
 
-The system consists of **two independently deployable services**:
-- **Frontend Service** — a web application
-- **Backend Service** — a REST API
+- Dockerized frontend and backend applications
+- CI/CD pipeline using GitHub Actions
+- Kubernetes-based deployment
+- Observability with Prometheus, Loki, Promtail, and Grafana
+- Secure RBAC configuration
+- Fully reproducible deployment steps
 
-Both services are containerized and communicate over HTTP.
+The goal is to reflect real-world DevOps practices rather than a minimal demo.
 
----
+## Architecture
 
-## Architecture Decision
+Flow:
 
-### High-Level Architecture
-Client  
-↓  
-Nginx (Reverse Proxy)  
-├─ Frontend Service (Container)  
-└─ Backend API Service (Container)
+- Developer pushes code to GitHub
+- GitHub Actions builds Docker images
+- Images are pushed to Docker Hub
+- Kubernetes workloads are updated
+- Metrics and logs are collected and visualized
 
-### Why Frontend + Backend?
-- Demonstrates clear **service boundaries**
-- Each service can be **built, deployed, and updated independently**
-- Aligns with **microservice architecture principles**
-- Keeps the application simple while highlighting DevOps capabilities
+Namespaces:
 
-Although the backend is a single API service, the overall system qualifies as a **microservice-based architecture** because services are isolated, networked, and independently deployable.
+- devops-assignment: application workloads
+- observability: monitoring and logging stack
 
----
+## Technology Stack
 
-## Technology Stack & Rationale
+| Component | Technology |
+|----------|-----------|
+| CI/CD | GitHub Actions |
+| Containers | Docker |
+| Orchestration | Kubernetes |
+| Metrics | Prometheus |
+| Logging | Loki, Promtail |
+| Visualization | Grafana |
+| Registry | Docker Hub |
 
-### Application Layer
-| Component | Technology | Rationale |
-|----------|------------|-----------|
-| Frontend | Static Web (HTML / JS or SPA) | Lightweight and fast to deploy |
-| Backend | REST API | Stateless and easy to containerize |
-| Communication | HTTP | Standard service-to-service communication |
+## Repository Structure
 
----
+```
+.github/workflows/ci.yml
+k8s/
+  backend/
+    deployment.yaml
+    service.yaml
+  frontend/
+    deployment.yaml
+    service.yaml
+  observability/
+    namespace.yaml
+    prometheus/
+    loki/
+    grafana/
+README.md
+```
 
-### Containerization
-| Tool | Rationale |
-|-----|-----------|
-| Docker | Industry-standard container platform |
-| Separate Dockerfiles | Enables independent service lifecycle |
+## CI/CD Pipeline
 
----
+### Trigger
 
-### Cloud Platform
-| Service | Rationale |
-|--------|-----------|
-| AWS EC2 | Simple, cost-efficient, Free Tier friendly |
-| Nginx | Reverse proxy instead of managed load balancer |
-| Amazon ECR (optional) | Container image registry |
+- Push to main branch
 
-> Kubernetes (EKS) is intentionally not used to avoid unnecessary operational complexity for the scope of this assignment.  
-> In a larger-scale production environment, ECS or EKS would be considered.
+### Stages
 
----
+1. Build backend Docker image
+2. Push backend image to Docker Hub
+3. Build frontend Docker image
+4. Push frontend image to Docker Hub
+5. Deploy updated images to Kubernetes
 
-### Infrastructure as Code (IaC)
-| Tool | Rationale |
-|------|-----------|
-| Terraform | Declarative, repeatable, and widely adopted IaC tool |
+### Image Tagging
 
-All infrastructure is provisioned using code to ensure consistency and reproducibility.
+- latest
+- Git commit SHA
 
----
+### Deployment Method
 
-### CI/CD
-| Tool | Rationale |
-|------|-----------|
-| GitHub Actions | Native GitHub integration and simple automation |
+- kubectl apply for manifests
+- kubectl set image for runtime updates
+- No manual changes on cluster nodes
 
-The CI/CD pipeline automates:
-1. Docker image builds
-2. Image publishing
-3. Deployment to AWS EC2
+## Kubernetes Deployment
 
----
+### Namespaces
 
-### Observability & Operations
-| Area | Approach |
-|------|----------|
-| Logging | Amazon CloudWatch Logs |
-| Metrics | Amazon CloudWatch Metrics |
-| Health Checks | `/health` endpoint on backend |
-| Resilience | Docker restart policies |
+| Namespace | Purpose |
+|----------|--------|
+| devops-assignment | Frontend and backend applications |
+| observability | Prometheus, Loki, Grafana, Promtail |
 
-These practices ensure the system is observable and manageable in a production-like environment.
+### Applications
 
----
+- Deployed using Deployment
+- Exposed using ClusterIP Service
+- Health endpoint: /health
+- imagePullPolicy set to Always
 
-## Microservice Definition
-This system follows microservice principles by ensuring:
-- Independent service deployment
-- Container isolation
-- Network-based communication
-- Stateless application design
+## Observability
 
-Future improvements may include decomposing the backend into multiple domain-based services (e.g., user-service, order-service).
+### Prometheus
 
----
+- Runs in observability namespace
+- Uses kubernetes_sd_configs
+- Scrapes pods using annotations
 
-## Local Development
+Required annotations:
 
-### Run Backend
+```yaml
+prometheus.io/scrape: "true"
+prometheus.io/port: "8080"
+prometheus.io/path: "/metrics"
+```
+
+RBAC:
+
+- Dedicated ServiceAccount
+- Dedicated ClusterRole
+- Dedicated ClusterRoleBinding
+
+Validation:
+
+- /targets page shows healthy endpoints
+- up query returns metrics
+
+### Loki and Promtail
+
+Loki:
+
+- Deployment
+- ClusterIP service
+- Receives logs via HTTP push
+
+Promtail:
+
+- DaemonSet
+- Reads logs from /var/log/containers/*.log
+- Uses CRI pipeline stage
+- Adds labels: job, namespace, pod, container, app
+
+Promtail client configuration:
+
+```yaml
+clients:
+  - url: http://loki.observability.svc.cluster.local:3100/loki/api/v1/push
+```
+
+Validation:
+
 ```bash
-docker build -t backend ./backend
-docker run -p 8080:8080 backend `
+curl http://localhost:3100/loki/api/v1/labels
+```
 
-###Run Frontend
+### Grafana
+
+- Runs in observability namespace
+- Used for metrics and log visualization
+
+Datasources:
+
+- Prometheus: http://prometheus.observability.svc.cluster.local:9090
+- Loki: http://loki.observability.svc.cluster.local:3100
+
+Example LogQL query:
+
+```logql
+{job="kubernetes-pods"}
+```
+
+## Security and RBAC
+
+- No component uses default permissions
+- Prometheus and Promtail use:
+  - Dedicated ServiceAccount
+  - Explicit ClusterRole
+  - Explicit ClusterRoleBinding
+- Principle of least privilege applied
+
+## Deployment Steps
+
+1. Create namespace
+
 ```bash
-docker build -t frontend ./frontend
-docker run -p 3000:80 frontend `
+kubectl apply -f k8s/observability/namespace.yaml
+```
 
----
+2. Deploy observability stack
 
-##Deployment Workflow (High-Level)
+```bash
+kubectl apply -f k8s/observability/prometheus
+kubectl apply -f k8s/observability/loki
+kubectl apply -f k8s/observability/grafana
+```
 
-Git Commit
-↓
-GitHub Actions (CI)
-↓
-Build Docker Images
-↓
-Push Images
-↓
-Deploy to AWS EC2
-↓
-Run Containers
-↓
-Nginx Routes Traffic
+3. Deploy applications
 
----
+```bash
+kubectl apply -f k8s/backend
+kubectl apply -f k8s/frontend
+```
 
-## Cost Consideration
+4. Verify
 
-This project is designed to operate within AWS Free Tier constraints by:
-- Using a single EC2 instance
-- Avoiding managed load balancers
-- Not using Kubernetes control plane services
+```bash
+kubectl get pods -A
+kubectl get svc -A
+```
 
-This approach minimizes cost while still demonstrating production-grade DevOps practices.
+## Demo and Validation Checklist
 
----
+Prometheus:
 
-## Future Improvements
-- Introduce ECS or EKS for container orchestration
-- Add auto-scaling and load balancing
-- Implement centralized monitoring dashboards
-- Add a staging environment
+- Targets page shows healthy endpoints
+- up query returns data
 
----
+Grafana:
+
+- Metrics dashboards load
+- Logs visible from Loki
+
+Loki:
+
+- Logs ingested from all namespaces
+- Labels available for querying
 
 ## Conclusion
 
-This project showcases how a production-grade microservice deployment can be achieved using simple, well-reasoned architectural decisions and modern DevOps practices on AWS.
-
-**Full Changelog**: https://github.com/MarkThana/devops-assignment-test/commits/readme-v1.0.0
+This project provides a complete DevOps workflow including CI/CD, Kubernetes deployment, observability, and security best practices suitable for production environments.
