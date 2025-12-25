@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: backend
-          image: markthanapat/f1ab8bc1fbb102c648fb9b4385547573d3c70e11
-          imagePullPolicy: IfNotPresent
+          image: markthanapat/backend:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           readinessProbe:
