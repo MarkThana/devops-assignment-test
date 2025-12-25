@@ -15,6 +15,29 @@ The goal is to reflect real-world DevOps practices rather than a minimal demo.
 
 ## Architecture
 
+Developer
+│
+▼
+GitHub Repository
+│
+▼
+GitHub Actions (CI/CD)
+	•	Build Docker images
+	•	Push images to Docker Hub
+	•	Deploy workloads to Kubernetes
+│
+▼
+Kubernetes Cluster
+├─ Namespace: devops-assignment
+│   ├─ Frontend (Deployment + Service)
+│   └─ Backend  (Deployment + Service)
+│
+└─ Namespace: observability
+├─ Prometheus (Metrics)
+├─ Loki (Logs)
+├─ Promtail (Log Collector – DaemonSet)
+└─ Grafana (Visualization)
+
 Flow:
 
 - Developer pushes code to GitHub
@@ -43,20 +66,37 @@ Namespaces:
 ## Repository Structure
 
 ```
-.github/workflows/ci.yml
-k8s/
-  backend/
-    deployment.yaml
-    service.yaml
-  frontend/
-    deployment.yaml
-    service.yaml
-  observability/
-    namespace.yaml
-    prometheus/
-    loki/
-    grafana/
-README.md
+.
+├── .github/workflows
+│   └── ci.yml
+├── k8s
+│   ├── backend
+│   │   ├── deployment.yaml
+│   │   └── service.yaml
+│   ├── frontend
+│   │   ├── deployment.yaml
+│   │   └── service.yaml
+│   └── observability
+│       ├── namespace.yaml
+│       ├── prometheus
+│       │   ├── configmap.yaml
+│       │   ├── deployment.yaml
+│       │   ├── service.yaml
+│       │   ├── serviceaccount.yaml
+│       │   ├── clusterrole.yaml
+│       │   └── clusterrolebinding.yaml
+│       ├── loki
+│       │   ├── configmap.yaml
+│       │   ├── deployment.yaml
+│       │   ├── service.yaml
+│       │   ├── daemonset.yaml        # Promtail
+│       │   ├── serviceaccount.yaml
+│       │   ├── clusterrole.yaml
+│       │   └── clusterrolebinding.yaml
+│       └── grafana
+│           ├── deployment.yaml
+│           └── service.yaml
+└── README.md
 ```
 
 ## CI/CD Pipeline
