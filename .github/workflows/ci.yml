@@ -91,5 +91,11 @@ jobs:
             kubectl apply -f k8s/backend/
             kubectl apply -f k8s/frontend/
 
+            kubectl -n devops-assignment set image deployment/backend \
+              backend=markthanapat/backend:${{ github.sha }}
+
+            kubectl -n devops-assignment set image deployment/frontend \
+              frontend=markthanapat/frontend:${{ github.sha }}
+
             kubectl -n devops-assignment rollout restart deployment/backend
             kubectl -n devops-assignment rollout restart deployment/frontend
